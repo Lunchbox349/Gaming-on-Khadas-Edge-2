@@ -287,11 +287,6 @@ PAN_MESA_DEBUG=gl3 MESA_GL_VERSION_OVERRIDE=4.6 MESA_GLSL_VERSION_OVERRIDE=460 M
 ## Optional: Compiling and Installing Box64
 Box64 tends to get better performance on RK3588 chips. Unfortunately, however, box64 is hardcoded to install into the `usr` directory; this can cause issues with, for example, FEX's binfmt support.
 
-Before compiling we need to install binfmt support:
-```
-sudo apt install binfmt-support
-```
-
 First we need to set up the build environment:
 ```
 git clone https://github.com/ptitSeb/box64
