@@ -1,5 +1,5 @@
 # Gaming on the Khadas Edge 2 in 2026
-I have spent a few weeks figuring all this stuff out, as there is little to no new documentation on this subject. Allow me to change that. This is a guide to running arm64 steam with the latest mesa and DXVK. Just a fair warning: this guide is not for the faint of heart; we are going to get deep into the technical weeds with this one. In theory most of this guide should work on all SBCs with RK3588 chips, but I haven't got any other than the Khadas Edge 2, so testing has not been done on other SBCs.
+I have spent a few weeks figuring all this stuff out, as there is little to no new documentation on this subject. Allow me to change that. This is a guide to running arm64 Steam with the latest mesa and DXVK. Just a fair warning: this guide is not for the faint of heart; we are going to get deep into the technical weeds with this one. In theory most of this guide should work on all SBCs with RK3588 chips, but I haven't got any other than the Khadas Edge 2, so testing has not been done on other SBCs.
 
 ## Installing Linux
 For this guide we're going to be using Armbian Debian 13 Trixie with the current kernel. This nets us both the latest stable kernel and the latest Debian version; this is very important for what we're doing. Downloading is easy enough; you can find it in the OOWOW or [here](https://armbian.com/boards/khadas-edge2) on Armbian's website. You can flash it in the OOWOW.
@@ -38,7 +38,7 @@ Now after a few seconds you should have the WiFi stuff pop up and be functional.
 ## Compiling and Installing Mesa
 In order to get the latest version of Mesa, you need to compile and install it yourself. Now we're not going to install it to the `usr` directory as that's bad practice and can potentially break your OS install. Instead we're going to install to the `opt` directory to prevent it from overwriting system files.
 
-First things first we need to install the dependencies:
+First things first you need to install the dependencies:
 ```
 sudo apt install build-essential git clang \
 	cmake pkg-config gedit \
@@ -82,11 +82,17 @@ You need to compile it on 1 thread in order to prevent a race condition that can
 meson compile -j 1 -C builddir/
 ```
 
-Once it's done compiling, we need to install it:
+Once it's done compiling, you need to install it:
 ```
 meson install -C builddir/
 ```
-Now we need to tell Linux where the new Mesa install is:
+
+Once Mesa is installed you can remove the source code:
+```
+rm ~/mesa
+```
+
+Now you need to tell Linux where the new Mesa install is:
 ```
 echo 'LD_LIBRARY_PATH="/opt/mesa/lib/aarch64-linux-gnu"' | sudo tee -a /etc/environment.d/10-mesa.conf
 echo 'VK_DRIVER_FILES="/opt/mesa/share/vulkan/icd.d/panfrost_icd.aarch64.json"' | sudo tee -a /etc/environment.d/10-mesa.conf
@@ -152,19 +158,24 @@ Install:
 ```
 sudo ninja install
 ```
+Once installed you can remove the source code:
+```
+rm ~/FEX
+```
+
 Add the FEX binaries to the linux path:
 ```
 echo 'export PATH=$PATH:/opt/fex-emu/bin' | sudo tee -a /etc/profile.d/fex-emu.sh
 ```
-After that we need to log out and log back in one more time.
+After that you need to log out and log back in one more time.
 
-Now we need to install a rootfs:
+Now you need to install a rootfs:
 ```
 FEXRootFSFetcher
 ```
 I tested this with the Arch Linux rootfs, so I know that one should work. Make sure to choose to extract it.
 
-Now we need to link the `~/.local/share/fex-emu` to `~/.fex-emu`
+Now you need to link the `~/.local/share/fex-emu` to `~/.fex-emu`
 ```
 ln -s ~/.local/share/fex-emu ~/.fex-emu
 ```
@@ -186,20 +197,20 @@ Restart `systemd-binfmt`:
 sudo systemctl restart systemd-binfmt
 ```
 ## Installing Steam
-To Install the arm native version of steam you first need to install the x86_64 version of steam:
+To Install the arm native version of Steam you first need to install the x86_64 version of Steam:
 ```
 wget https://raw.githubusercontent.com/ptitSeb/box64/main/install_steam.sh
 bash install_steam.sh
 ```
-You can run steam with:
+You can run Steam with:
 ```
 FEXBash steam
 ```
-Once you reach the login screen close steam completely.
+Once you reach the login screen close Steam completely.
 
-You'll need these dependancies for arm64 steam:
+You'll need these dependancies for arm64 Steam as well as unzip:
 ```
-sudo apt install libgtk2.0-0t64 libsdl2-mixer-2.0-0
+sudo apt install libgtk2.0-0t64 libsdl2-mixer-2.0-0 unzip
 ```
 Download the Steam arm64 manifest:
 ```
@@ -209,7 +220,10 @@ Enable the Steam Beta:
 ```
 mkdir -p ~/.local/share/Steam/package && echo publicbeta > ~/.local/share/Steam/package/beta
 ```
-We need to extract the `bins_linuxarm64_linuxarm64.zip` in your home folder and move the contents to `~/.local/share/steam`.
+you need to extract the `bins_linuxarm64_linuxarm64.zip` to `~/.local/share/steam`.
+```
+unzip ./bins_linuxarm64_linuxarm64.zip -d ~/.local/share/Steam/
+```
 
 Next you need to change the permisions on the `steamrtarm64` folder.
 ```
@@ -220,23 +234,34 @@ You need to link `libvpx` to prevent an error.
 sudo ln -s /usr/lib/aarch64-linux-gnu/libvpx.so.9 /usr/lib/aarch64-linux-gnu/libvpx.so.6
 ```
 
-You should now be able to run steam from:
+You should now be able to run Steam from:
 ```
 ~/.local/share/Steam/steamrtarm64/steam
 ```
-In order to launch games from the arm64 version of Steam, you need the arm64 version of the Steam Linux runtime. You can download it [here](https://archive.org/download/arm-64proton-runtime-64.tar) along with the Proton 11 arm64 version.
+In order to launch games from the arm64 version of Steam, you need the arm64 version of the Steam Linux runtime.
+```
+wget https://archive.org/download/arm-64proton-runtime-64.tar/ARM64proton-Runtime64.tar.gz
+```
 
-After downloading `ARM64proton-Runtime64.tar.gz` you need to extract it and copy the two folders inside and move them to `~/.local/share/Steam/compatibilitytools.d/`.
+Extract to `~/.local/share/Steam/compatibilitytools.d/`.
+```
+tar -xvzf ./ARM64proton-Runtime64.tar.gz -C ~/.local/share/Steam/compatibilitytools.d/
+```
 
 Now you need to create this symlink:
 ```
 ln -s "$HOME/.local/share/Steam/linuxarm64" "$HOME/.steam/sdkarm64"
 ```
-To run a game with FEX:
+Remove leftover files:
+```
+rm ~/ARM64proton-Runtime64.tar.gz ~/bins_linuxarm64_linuxarm64.zip ~/install_steam.sh
+```
+
+To run a game with FEX add this to the Steam launch options:
 ```
 FEXBash %command%
 ```
-To run a game with Box64:
+And the launch options for Box64:
 ```
 box64 %command%
 ```
@@ -262,7 +287,7 @@ DX10: `d3d10core.dll` `d3d11.dll` `dxgi.dll`
 
 DX11: `d3d11.dll` `dxgi.dll`
 
-To use Zink, you'll need to use the usual envars with an aditional `LIBGL_KOPPER_DRI2=true`.
+To use Zink, you'll need to add the usual envars with an aditional `LIBGL_KOPPER_DRI2=true` to your Steam launch options.
 ```
 MESA_LOADER_DRIVER_OVERRIDE=zink GALLIUM_DRIVER=zink LIBGL_KOPPER_DRI2=true %command%
 ```
@@ -273,7 +298,7 @@ PAN_MESA_DEBUG=gl3 MESA_GL_VERSION_OVERRIDE=4.6 MESA_GLSL_VERSION_OVERRIDE=460 M
 ## Optional: Compiling and Installing Box64
 Box64 tends to get better performance on RK3588 chips. Unfortunately, however, box64 is hardcoded to install into the `usr` directory; this can cause issues with, for example, FEX's binfmt support.
 
-First we need to set up the build environment:
+First you need to set up the build environment:
 ```
 git clone https://github.com/ptitSeb/box64
 cd box64
@@ -296,6 +321,11 @@ Restart systemd-binfmt:
 ```
 sudo systemctl restart systemd-binfmt
 ```
+Once installed you can remove the source code:
+```
+rm ~/box64
+```
+
 ## Optional: Sound Fix
 If you have issues with sound stutering try using this command:
 ```
