@@ -88,10 +88,10 @@ meson install -C builddir/
 ```
 Now we need to tell Linux where the new Mesa install is:
 ```
-echo 'export LD_LIBRARY_PATH="/opt/mesa/lib/aarch64-linux-gnu"' | sudo tee -a /etc/profile.d/mesa.sh
-echo 'export VK_DRIVER_FILES="/opt/mesa/share/vulkan/icd.d/panfrost_icd.aarch64.json"' | sudo tee -a /etc/profile.d/mesa.sh
+echo 'LD_LIBRARY_PATH="/opt/mesa/lib/aarch64-linux-gnu"' | sudo tee -a /etc/environment.d/10-mesa.conf
+echo 'VK_DRIVER_FILES="/opt/mesa/share/vulkan/icd.d/panfrost_icd.aarch64.json"' | sudo tee -a /etc/environment.d/10-mesa.conf
 ```
-After that we need to log out and log back in again.
+After that you need to reboot.
 
 To test the freshly installed Mesa, you can run these 4 commands:
 
