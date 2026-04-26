@@ -246,7 +246,7 @@ To run a game with Valve's integrated FEX, you just need to start a game with `P
 It seems that running the Steam client natively on ARM breaks support for running 32-bit games with Box32. You can either run the game in FEX or run Steam with `box64 steam` if you have Box64 installed.
 
 ## DXVK and Zink
-Here is where we encounter my biggest headache and the thing that took me the longest to figure out. The thing is the Mali G610, the GPU used by the RK3588, is missing a few things that make it compatible with normal Vulkan applications, mainly Vulkan extensions, but it's also missing two Vulkan hardware descriptors `fillModeNonSolid`, and `shaderClipDistance` this makes running DXVK and Zink tricky as well as running Vulkan native games much harder. However, all hope is not lost; thanks to a community of gamers on the Orange Pi 5, we now have patched versions of DXVK as well as figured out how to run Zink.
+Here is where we encounter my biggest headache and the thing that took me the longest to figure out. The thing is the Mali G610, the GPU used by the RK3588, is missing a few things that make it compatible with normal Vulkan applications, mainly Vulkan extensions, but it's also missing two Vulkan hardware descriptors `fillModeNonSolid`, and `shaderClipDistance` this makes running DXVK and Zink tricky as well as running Vulkan native games much harder. Specifically, `fillModeNonSolid` is the most important of the 2 missing hardware descriptors, as this was included in Vulkan 1.0 and basically every Vulkan game uses it. However, all hope is not lost; thanks to a community of gamers on the Orange Pi 5, we now have patched versions of DXVK as well as figured out how to run Zink.
 
 To run DXVK, you're going to need one of the builds you can find [here.](https://github.com/khanh-it/dxvk/releases/tag/releases) I personally recommend trying the DXVK-Sarek-Zayada build, as it's the one I've had the best results with, but any of them should work.
 
@@ -262,21 +262,7 @@ DX10: `d3d10core.dll` `d3d11.dll` `dxgi.dll`
 
 DX11: `d3d11.dll` `dxgi.dll`
 
-After that you need to add the `WINEDLLOVERRIDES` to the Steam launch options for the game you're trying to run.
-
-DX9:
-```
-WINEDLLOVERRIDES="d3d9.dll=n,b" %command%
-```
-DX10:
-```
-WINEDLLOVERRIDES="d3d10core.dll=n,b" WINEDLLOVERRIDES="d3d11.dll=n,b" WINEDLLOVERRIDES="dxgi.dll=n,b" %command%
-```
-DX11:
-```
-WINEDLLOVERRIDES="d3d11.dll=n,b" WINEDLLOVERRIDES="dxgi.dll=n,b" %command%
-```
-Zink thankfully doesn't need you to do anything too crazy; you just need to add an extra launch option, `LIBGL_KOPPER_DRI2=true`.
+To use Zink, you'll need to use the usual envars with an aditional `LIBGL_KOPPER_DRI2=true`.
 ```
 MESA_LOADER_DRIVER_OVERRIDE=zink GALLIUM_DRIVER=zink LIBGL_KOPPER_DRI2=true %command%
 ```
