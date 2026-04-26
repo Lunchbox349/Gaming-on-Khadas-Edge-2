@@ -35,19 +35,24 @@ sudo netplan apply
 ```
 Now after a few seconds you should have the WiFi stuff pop up and be functional.
 
-### Optional Sound Fix:
-I don't know how widespread this issue is, but I had an issue where the sound would randomly cut out when playing games. It took me forever to find a fix for it, but here it is:
-```
-echo 'export PULSE_LATENCY_MSEC=60' | sudo tee -a /etc/profile.d/soundfix.sh
-```
-After that, just log out and log back in, and the sound should be fixed.
-
 ## Compiling and Installing Mesa
 In order to get the latest version of Mesa, you need to compile and install it yourself. Now we're not going to install it to the `usr` directory as that's bad practice and can potentially break your OS install. Instead we're going to install to the `opt` directory to prevent it from overwriting system files.
 
 First things first we need to install the dependencies:
 ```
-sudo apt install build-essential git clang cmake pkg-config gedit bison mesa-utils vulkan-tools libopengl0 meson python3-packaging python3-mako flex byacc libclc-19-dev libdrm-dev libudev-dev llvm-dev llvm-spirv-19 libllvmspirvlib-19-dev spirv-tools libclang-cpp-dev libwayland-dev libwayland-egl-backend-dev libxcb1-dev libxcb-randr0-dev libx11-dev libxext-dev libxfixes-dev libxcb-glx0-dev libxcb-shm0-dev libx11-xcb-dev libxcb-dri3-dev libxcb-present-dev libxshmfence-dev libxxf86vm-dev libxrandr-dev libclang-dev
+sudo apt install build-essential git clang \
+	cmake pkg-config gedit \
+	bison mesa-utils vulkan-tools \
+	libopengl0 meson python3-packaging \
+	python3-mako flex byacc libclc-19-dev \
+	libdrm-dev libudev-dev llvm-dev \
+	llvm-spirv-19 libllvmspirvlib-19-dev spirv-tools \
+	libclang-cpp-dev libwayland-dev libwayland-egl-backend-dev \
+	libxcb1-dev libxcb-randr0-dev libx11-dev \
+	libxext-dev libxfixes-dev libxcb-glx0-dev \
+	libxcb-shm0-dev libx11-xcb-dev libxcb-dri3-dev \
+	libxcb-present-dev libxshmfence-dev libxxf86vm-dev \
+	libxrandr-dev libclang-dev
 ```
 If you run into issues with `libclc-19-dev` `llvm-spirv-19` `libllvmspirvlib-19-dev` it probably means that Debian has updated which version of `clang` and `llvm` they use. To fix this, you just need to change the 19 in each package to whatever version the current `clang` is.
 
@@ -107,34 +112,76 @@ vkcube
 glxgears
 ```
 If all those are good, you have successfully updated Mesa without overwriting your Debian system libraries.
-## Compiling and Installing Box64
-Now you might be wondering, "Why aren't you using FEX? Isn't it supposed to have better performance than Box64?" And you'd be half right. FEX does have better performance on Snapdragon chips; however, on low-power SBCs like the Khadas Edge 2 with the RK3588, you get better performance with Box64.
 
-Before compiling we need to install binfmt support:
+## Installing FEX
+Install Dependencies (Note: This does not include dependencies already installed when compiling mesa.)
 ```
-sudo apt install binfmt-support
+sudo apt install  binfmt-support lld libssl-dev \
+	g++-x86-64-linux-gnu libgcc-14-dev-amd64-cross \
+	libgcc-14-dev-i386-cross libstdc++-14-dev-i386-cross \
+	squashfs-tools squashfuse qt6-declarative-dev \
+	qml6-module-qtquick-controls qml6-module-qtquick-dialogs \
+	qml6-module-qtquick-layouts qml6-module-qtqml-workerscript \
+	qml6-module-qtquick-templates qml6-module-qtquick-window \
+	libxcb-dri2-0-dev libasound2-dev libegl1-mesa-dev
 ```
+Setup Build Directory:
+```
+git clone --recurse-submodules https://github.com/FEX-Emu/FEX.git
+cd FEX
+mkdir Build
+cd Build
+```
+Configure with `cmake`:
+```
+CC=clang CXX=clang++ cmake \
+	-DCMAKE_INSTALL_PREFIX=/opt/fex-emu \
+	-DCMAKE_BUILD_TYPE=Release \
+	-DUSE_LINKER=lld \
+	-DENABLE_LTO=True \
+	-DBUILD_TESTING=False \
+	-DENABLE_ASSERTIONS=False \
+	-DBUILD_THUNKS=True \
+	-G Ninja ..
+```
+Build with `ninja`:
+```
+ninja -j4
+```
+Install:
+```
+sudo ninja install
+```
+Add the FEX binaries to the linux path:
+```
+echo 'export PATH=$PATH:/opt/fex-emu/bin' | sudo tee -a /etc/profile.d/fex-emu.sh
+```
+After that we need to log out and log back in one more time.
 
-First we need to set up the build environment:
+Now we need to install a rootfs:
 ```
-git clone https://github.com/ptitSeb/box64
-cd box64
-mkdir build
-cd build
+FEXRootFSFetcher
 ```
-Configure the build using `cmake`:
+I tested this with the Arch Linux rootfs, so I know that one should work. Make sure to choose to extract it.
+
+Now we need to link the `~/.local/share/fex-emu` to `~/.fex-emu`
 ```
-cmake .. -D ARM_DYNAREC=ON -D RK3588=1 -D CMAKE_BUILD_TYPE=RelWithDebInfo -D BOX32=ON -D BOX32_BINFMT=ON
+ln -s ~/.local/share/fex-emu ~/.fex-emu
 ```
-Compile the build:
+Configure FEX with:
 ```
-make -j4
+FEXConfig
 ```
-Install Box64:
+Make sure to enable the Arch Linux rootfs as well as enable Vulkan and GL under libraries. Remember to hit file and then save before closing.
+
+### Optional: Enabling binfmt for FEX (Note: Don't do this if you plan to have Box64 installed.)
+
+Link the binfmt configs to the binfmt.d folder:
 ```
-sudo make install
+sudo ln -s /opt/fex-emu/lib/binfmt.d/FEX-x86_64.conf /usr/lib/binfmt.d/
+sudo ln -s /opt/fex-emu/lib/binfmt.d/FEX-x86.conf /usr/lib/binfmt.d/
 ```
-Restart systemd-binfmt:
+Restart `systemd-binfmt`:
 ```
 sudo systemctl restart systemd-binfmt
 ```
@@ -146,7 +193,7 @@ bash install_steam.sh
 ```
 You can run steam with:
 ```
-box64 steam
+FEXBash steam
 ```
 Once you reach the login screen close steam completely.
 
@@ -185,17 +232,19 @@ Now you need to create this symlink:
 ```
 ln -s "$HOME/.local/share/Steam/linuxarm64" "$HOME/.steam/sdkarm64"
 ```
-It seems that running the Steam client natively on ARM breaks support for 32-bit games; those still need to be run through `box64 steam`. Using Box86 instead of Box32 may potentially fix the broken 32-bit games.
-
-To run a game with Box64 you simply need to have:
-```
-box64 %command%
-```
 To run a game with FEX:
 ```
 FEXBash %command%
 ```
-To run a game with Valve's integrated FEX, you just need to start a game with proton11-arm64. Make sure to remove `box64` and `FEXBash` from your launch options.
+To run a game with Box64:
+```
+box64 %command%
+```
+
+To run a game with Valve's integrated FEX, you just need to start a game with `Proton11 (arm64, local)`. Make sure to remove `box64` and `FEXBash` from your launch options.
+
+It seems that running the Steam client natively on ARM breaks support for running 32-bit games with Box32. You can either run the game in FEX or run Steam with `box64 steam` if you have Box64 installed.
+
 ## DXVK and Zink
 Here is where we encounter my biggest headache and the thing that took me the longest to figure out. The thing is the Mali G610, the GPU used by the RK3588, is missing a few things that make it compatible with normal Vulkan applications, mainly Vulkan extensions, but it's also missing two Vulkan hardware descriptors `fillModeNonSolid`, and `shaderClipDistance` this makes running DXVK and Zink tricky as well as running Vulkan native games much harder. However, all hope is not lost; thanks to a community of gamers on the Orange Pi 5, we now have patched versions of DXVK as well as figured out how to run Zink.
 
@@ -235,69 +284,43 @@ MESA_LOADER_DRIVER_OVERRIDE=zink GALLIUM_DRIVER=zink LIBGL_KOPPER_DRI2=true %com
 ```
 PAN_MESA_DEBUG=gl3 MESA_GL_VERSION_OVERRIDE=4.6 MESA_GLSL_VERSION_OVERRIDE=460 MESA_LOADER_DRIVER_OVERRIDE=zink GALLIUM_DRIVER=zink LIBGL_KOPPER_DRI2=true %command%
 ```
-## Optional: Installing FEX
-You'll want to be able to use FEX, as there are games that won't work on Box64 and vice versa. Like before with Mesa, you're going to want to install into the `opt` directory to prevent FEX from breaking your OS install.
+## Optional: Compiling and Installing Box64
+Box64 tends to get better performance on RK3588 chips. Unfortunately, however, box64 is hardcoded to install into the `usr` directory; this can cause issues with, for example, FEX's binfmt support.
 
-Install Dependencies (Note: This does not include dependencies already installed when compiling mesa.)
+Before compiling we need to install binfmt support:
 ```
-sudo apt install lld libssl-dev g++-x86-64-linux-gnu libgcc-14-dev-amd64-cross libgcc-14-dev-i386-cross libstdc++-14-dev-i386-cross squashfs-tools squashfuse qt6-declarative-dev qml6-module-qtquick-controls qml6-module-qtquick-dialogs qml6-module-qtquick-layouts qml6-module-qtqml-workerscript qml6-module-qtquick-templates qml6-module-qtquick-window libxcb-dri2-0-dev libasound2-dev libegl1-mesa-dev
+sudo apt install binfmt-support
 ```
-Setup Build Directory:
-```
-git clone --recurse-submodules https://github.com/FEX-Emu/FEX.git
-cd FEX
-mkdir Build
-cd Build
-```
-Configure with `cmake`:
-```
-CC=clang CXX=clang++ cmake -DCMAKE_INSTALL_PREFIX=/opt/fex-emu -DCMAKE_BUILD_TYPE=Release -DUSE_LINKER=lld -DENABLE_LTO=True -DBUILD_TESTING=False -DENABLE_ASSERTIONS=False -DBUILD_THUNKS=True -G Ninja ..
-```
-Build with `ninja`:
-```
-ninja -j4
-```
-Install:
-```
-sudo ninja install
-```
-Add the FEX binaries to the linux path:
-```
-echo 'export PATH=$PATH:/opt/fex-emu/bin' | sudo tee -a /etc/profile.d/fex-emu.sh
-```
-After that we need to log out and log back in one more time.
 
-Now we need to install a rootfs:
+First we need to set up the build environment:
 ```
-FEXRootFSFetcher
+git clone https://github.com/ptitSeb/box64
+cd box64
+mkdir build
+cd build
 ```
-I tested this with the Arch Linux rootfs, so I know that one should work. Make sure to choose to extract it.
-
-Now we need to link the `~/.local/share/fex-emu` to `~/.fex-emu`
+Configure the build using `cmake`:
 ```
-ln -s ~/.local/share/fex-emu ~/.fex-emu
+cmake .. -D ARM_DYNAREC=ON -D RK3588=1 -D CMAKE_BUILD_TYPE=RelWithDebInfo -D BOX32=ON -D BOX32_BINFMT=ON
 ```
-Configure FEX with:
+Compile the build:
 ```
-FEXConfig
+make -j4
 ```
-Make sure to enable the Arch Linux rootfs as well as enable Vulkan and GL under libraries. Remember to hit file and then save before closing.
-
-You should now be able to run Steam with:
+Install Box64:
 ```
-FEXBash steam
+sudo make install
 ```
-## Enabling binfmt for FEX (Note: Don't do this if you have Box64 installed.)
-
-Link the binfmt configs to the binfmt.d folder:
-```
-sudo ln -s /opt/fex-emu/lib/binfmt.d/FEX-x86_64.conf /usr/lib/binfmt.d/
-sudo ln -s /opt/fex-emu/lib/binfmt.d/FEX-x86.conf /usr/lib/binfmt.d/
-```
-Restart `systemd-binfmt`:
+Restart systemd-binfmt:
 ```
 sudo systemctl restart systemd-binfmt
 ```
+## Optional: Sound Fix
+If you have issues with sound stutering try using this command:
+```
+echo 'export PULSE_LATENCY_MSEC=60' | sudo tee -a /etc/profile.d/soundfix.sh
+```
+After that, just log out and log back in, and the sound should be fixed.
 ## Special Thanks
 **VennStone**, from the interfacing Linux forum for figuring out how to run the arm64 version of Steam.
 
