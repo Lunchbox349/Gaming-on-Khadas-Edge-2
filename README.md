@@ -266,7 +266,7 @@ To use Zink, you'll need to use the usual envars with an aditional `LIBGL_KOPPER
 ```
 MESA_LOADER_DRIVER_OVERRIDE=zink GALLIUM_DRIVER=zink LIBGL_KOPPER_DRI2=true %command%
 ```
-If your game doesn't run with Zink, you can try to force Zink to run by running the following:
+If the game fails to start with Zink, you can try to force a higher OpenGL version.
 ```
 PAN_MESA_DEBUG=gl3 MESA_GL_VERSION_OVERRIDE=4.6 MESA_GLSL_VERSION_OVERRIDE=460 MESA_LOADER_DRIVER_OVERRIDE=zink GALLIUM_DRIVER=zink LIBGL_KOPPER_DRI2=true %command%
 ```
