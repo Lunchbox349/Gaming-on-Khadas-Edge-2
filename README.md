@@ -178,8 +178,8 @@ Make sure to enable the Arch Linux rootfs as well as enable Vulkan and GL under 
 
 Link the binfmt configs to the binfmt.d folder:
 ```
-sudo ln -s /opt/fex-emu/lib/binfmt.d/FEX-x86_64.conf /usr/lib/binfmt.d/
-sudo ln -s /opt/fex-emu/lib/binfmt.d/FEX-x86.conf /usr/lib/binfmt.d/
+sudo ln -s /opt/fex-emu/lib/binfmt.d/FEX-x86_64.conf /etc/binfmt.d/
+sudo ln -s /opt/fex-emu/lib/binfmt.d/FEX-x86.conf /etc/binfmt.d/
 ```
 Restart `systemd-binfmt`:
 ```
