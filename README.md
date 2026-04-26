@@ -266,7 +266,7 @@ And the launch options for Box64:
 box64 %command%
 ```
 
-To run a game with Valve's integrated FEX, you just need to start a game with `Proton11 (arm64, local)`. Make sure to remove `box64` and `FEXBash` from your launch options.
+To run a game with Valve's integrated FEX, you just need to start a game with `Proton 11.0 (ARM64, Local)`. Make sure to remove `box64` and `FEXBash` from your launch options.
 
 It seems that running the Steam client natively on ARM breaks support for running 32-bit games with Box32. You can either run the game in FEX or run Steam with `box64 steam` if you have Box64 installed.
 
