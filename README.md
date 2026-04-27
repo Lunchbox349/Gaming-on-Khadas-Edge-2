@@ -89,6 +89,7 @@ meson install -C builddir/
 
 Once Mesa is installed you can remove the source code:
 ```
+cd
 rm -r ~/mesa
 ```
 
@@ -160,6 +161,7 @@ sudo ninja install
 ```
 Once installed you can remove the source code:
 ```
+cd
 rm -r ~/FEX
 ```
 
@@ -323,6 +325,7 @@ sudo systemctl restart systemd-binfmt
 ```
 Once installed you can remove the source code:
 ```
+cd
 rm -r ~/box64
 ```
 
