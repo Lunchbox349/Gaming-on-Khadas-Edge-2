@@ -167,7 +167,7 @@ Add the FEX binaries to the linux path:
 ```
 echo 'export PATH=$PATH:/opt/fex-emu/bin' | sudo tee -a /etc/profile.d/fex-emu.sh
 ```
-After that you need to log out and log back in one more time.
+After that you need to log out and log back in.
 
 Now you need to install a rootfs:
 ```
