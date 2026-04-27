@@ -90,7 +90,7 @@ meson install -C builddir/
 Once Mesa is installed you can remove the source code:
 ```
 cd
-rm -r ~/mesa
+sudo rm -r ~/mesa
 ```
 
 Now you need to tell Linux where the new Mesa install is:
@@ -162,7 +162,7 @@ sudo ninja install
 Once installed you can remove the source code:
 ```
 cd
-rm -r ~/FEX
+sudo rm -r ~/FEX
 ```
 
 Add the FEX binaries to the linux path:
@@ -319,7 +319,7 @@ sudo systemctl restart systemd-binfmt
 Once installed you can remove the source code:
 ```
 cd
-rm -r ~/box64
+sudo rm -r ~/box64
 ```
 
 ## Optional: Sound Fix
