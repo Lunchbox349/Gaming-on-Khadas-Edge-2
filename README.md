@@ -259,16 +259,9 @@ Remove leftover files:
 rm ~/ARM64proton-Runtime64.tar.gz ~/bins_linuxarm64_linuxarm64.zip ~/install_steam.sh
 ```
 
-To run a game with FEX add this to the Steam launch options:
-```
-FEXBash %command%
-```
-And the launch options for Box64:
-```
-box64 %command%
-```
+The native arm Steam uses the x86 runtime to launch games when not loading its own integrated FEX. This causes whichever emulator has its binfmt enabled to be loaded no matter what.
 
-To run a game with Valve's integrated FEX, you just need to start a game with `Proton 11.0 (ARM64, Local)`. Make sure to remove `box64` and `FEXBash` from your launch options.
+To run a game with Valve's integrated FEX, you just need to start a game with `Proton 11.0 (ARM64, Local)`.
 
 It seems that running the Steam client natively on ARM breaks support for running 32-bit games with Box32. You can either run the game in FEX or run Steam with `box64 steam` if you have Box64 installed.
 
