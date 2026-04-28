@@ -263,12 +263,22 @@ The native arm Steam uses the x86 runtime to launch games when not loading its o
 
 To run a game with Valve's integrated FEX, you just need to start a game with `Proton 11.0 (ARM64, Local)`.
 
-It seems that running the Steam client natively on ARM breaks support for running 32-bit games with Box32. You can either run the game in FEX or run Steam with `box64 steam` if you have Box64 installed.
+It seems that running the Steam client natively on ARM breaks support for running 32-bit games with box64. To fix this, enable wow64.
+```
+PROTON_USE_WOW64=1 %command%
+```
 
 ## DXVK and Zink
 Here is where we encounter my biggest headache and the thing that took me the longest to figure out. The thing is the Mali G610, the GPU used by the RK3588, is missing a few things that make it compatible with normal Vulkan applications, mainly Vulkan extensions, but it's also missing two Vulkan hardware descriptors `fillModeNonSolid`, and `shaderClipDistance` this makes running DXVK and Zink tricky as well as running Vulkan native games much harder. Specifically, `fillModeNonSolid` is the most important of the 2 missing hardware descriptors, as this was included in Vulkan 1.0 and basically every Vulkan game uses it. However, all hope is not lost; thanks to a community of gamers on the Orange Pi 5, we now have patched versions of DXVK as well as figured out how to run Zink.
 
-To run DXVK, you're going to need one of the builds you can find [here.](https://github.com/khanh-it/dxvk/releases/tag/releases) I personally recommend trying the DXVK-Sarek-Zayada build, as it's the one I've had the best results with, but any of them should work.
+To run DXVK, you're going to need one of the builds you can find below. I personally recommend trying the DXVK-Sarek-Zayada build, as it's the one I've had the best results with, but any of them should work.
+
+<table>
+	<tr>
+		<td>DXVK-Stripped</td>
+		<td><a href="https://github.com/khanh-it/dxvk/releases/tag/releases">Download</a></td>
+	</tr>
+</table>
 
 To install you just need to extract the zip file and move the DLLs you need to the folder with the exe file for the game you're trying to run.
 
