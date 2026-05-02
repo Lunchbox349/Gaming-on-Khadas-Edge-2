@@ -110,7 +110,7 @@ glxinfo | grep "OpenGL version"
 ```
 vkcube
 ```
-4. Test opengl
+4. Test opengl:
 ```
 glxgears
 ```
