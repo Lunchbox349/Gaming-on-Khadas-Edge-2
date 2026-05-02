@@ -11,64 +11,7 @@ The first thing you're going to want to do after installing Armbian is, of cours
 ```
 sudo apt update && sudo apt -y upgrade
 ```
-After that you're going to need a desktop as well as a web browser. The `rtkit` package is to fix an error with pipewire.
-```
-sudo apt install gnome-core firefox-esr rtkit
-```
-After installing GNOME, reboot your system, and you should be greeted with the GNOME login manager. Once you log in, you're probably going to notice that the WiFi is missing. Don't worry, it's still working; you just need to change it to use `NetworkManager` in order for Gnome to be able to see the WiFi settings.
-```
-sudo apt install network-manager
-```
-Now you need to edit the Netplan settings to tell it to use `NetworkManager` instead of `Networkd`.
-```
-sudo nano /etc/netplan/10-dhcp-all-interfaces.yaml
-```
-Next you just need to change the renderer to `NetworkManager`. It should go from:
-```
-renderer: networkd
-```
-to
-```
-renderer: NetworkManager
-```
-After that you just need to apply the new configuration.
-```
-sudo netplan apply
-```
-Now after a few seconds you should have the WiFi stuff pop up and be functional.
-
-## Compiling and Installing Mesa
-In order to get the latest version of Mesa, you need to compile and install it yourself. Now we're not going to install it to the `usr` directory as that's bad practice and can potentially break your OS install. Instead you'll want to install to the `opt` directory to prevent it from overwriting system files.
-
-First things first you need to install the dependencies:
-```
-sudo apt install build-essential git clang \
-	cmake pkg-config gedit \
-	bison mesa-utils vulkan-tools \
-	libopengl0 meson python3-packaging \
-	python3-mako flex byacc libclc-19-dev \
-	libdrm-dev libudev-dev llvm-dev \
-	llvm-spirv-19 libllvmspirvlib-19-dev spirv-tools \
-	libclang-cpp-dev libwayland-dev libwayland-egl-backend-dev \
-	libxcb1-dev libxcb-randr0-dev libx11-dev \
-	libxext-dev libxfixes-dev libxcb-glx0-dev \
-	libxcb-shm0-dev libx11-xcb-dev libxcb-dri3-dev \
-	libxcb-present-dev libxshmfence-dev libxxf86vm-dev \
-	libxrandr-dev libclang-dev
-```
-If you run into issues with `libclc-19-dev` `llvm-spirv-19` `libllvmspirvlib-19-dev` it probably means that Debian has updated which version of `clang` and `llvm` they use. To fix this, you just need to change the 19 in each package to whatever version the current `clang` is.
-
-You can figure out which version of `clang` Debian installed by running this command:
-```
-clang --version
-```
-The next step is to clone the Mesa repository:
-```
-git clone https://gitlab.freedesktop.org/mesa/mesa
-cd mesa
-rm -rf builddir
-```
-After this you just need to run the command to configure Meson:
+I don't know about other RK3588 versions of Armbian, but for some reason this version is missing a sound server. You can install it with this command:
 ```
 sudo apt install pipewire-audio libcanberra-pulse
 ```
@@ -78,54 +21,23 @@ systemctl --user restart pipewire pipewire-pulse wireplumber
 ```
 Sound should be working now.
 
-Once it's done compiling, you need to install it:
+## Installing Mesa
+To install the latest Mesa drivers, we can use the mesaaco repo, which gives us bleeding-edge Mesa.
 ```
-meson install -C builddir/
+sudo add-apt-repository ppa:ernstp/mesaaco
+sudo apt update && sudo apt -y upgrade
+sudo apt install vulkan-tools mesa-vulkan-drivers
 ```
-
-Once Mesa is installed you can remove the source code:
-```
-cd
-sudo rm -r ~/mesa
-```
-
-Now you need to tell Linux where the new Mesa install is:
-```
-echo 'LD_LIBRARY_PATH="/opt/mesa/lib/aarch64-linux-gnu"' | sudo tee -a /etc/environment.d/10-mesa.conf
-echo 'VK_DRIVER_FILES="/opt/mesa/share/vulkan/icd.d/panfrost_icd.aarch64.json"' | sudo tee -a /etc/environment.d/10-mesa.conf
-```
-After that you need to reboot.
-
-To test the freshly installed Mesa, you can run these 4 commands:
-
-1. Check if the Vulkan version is correct:
-```
-vulkaninfo --summary
-```
-2. Check if the Opengl version is correct:
-```
-glxinfo | grep "OpenGL version"
-```
-3. Check if Vulkan is working correctly:
-```
-vkcube
-```
-4. Check if Opengl is working correctly:
-```
-glxgears
-```
-If all those are good, you have successfully updated Mesa without overwriting your Debian system libraries.
-
 ## Installing Box64
 Box64 tends to offer better performance than FEX on RK3588 chips. Not only that, but FEX is included in the arm64 version of Steam; we can use that version instead of installing FEX globally.
 ```
 sudo wget https://ryanfortner.github.io/box64-debs/box64.list -O /etc/apt/sources.list.d/box64.list
 wget -qO- https://ryanfortner.github.io/box64-debs/KEY.gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/box64-debs-archive-keyring.gpg 
 sudo apt update && sudo apt install -y box64-rk3588
-```
-## Installing Steam
-Note: Large portions of this part of the guide were taken from VennStone's post [here](https://interfacinglinux.com/community/sbcsoftware/native-steam-client-for-arm-linux/).
 
+```
+
+## Installing Steam
 To Install the arm native version of Steam you first need to install the x86_64 version of Steam:
 ```
 wget https://raw.githubusercontent.com/ptitSeb/box64/main/install_steam.sh
@@ -225,52 +137,6 @@ If the game fails to start with Zink, you can try to force a higher OpenGL versi
 ```
 MESA_GL_VERSION_OVERRIDE=4.6 MESA_GLSL_VERSION_OVERRIDE=460 MESA_LOADER_DRIVER_OVERRIDE=zink GALLIUM_DRIVER=zink LIBGL_KOPPER_DRI2=true %command%
 ```
-## Optional: Gamescope
-Gamescope is useful for fixing issues with resolutions and fullscreen mode on top of its upscaling abilities. Unfortunately it doesn't have a package in Debian Trixie, so we are going to have to compile it. The good news is that this will give us the bleeding-edge version of gamescope. Note: Most of this guide is just taken from VennStone's guide [here](https://interfacinglinux.com/community/linuxgaming/installing-gamescope-on-debian-13-amd-nvidia/).
-
-Install Dependencies.
-```
-sudo apt install \
-  git build-essential cmake
-  meson xwayland wayland-protocols \
-  glslang-tools libwayland-dev libvulkan-dev \
-  libdrm-dev libgbm-dev libxkbcommon-dev \
-  libxkbfile-dev libxfont-dev libxcvt-dev \
-  libx11-dev libx11-xcb-dev libxcb-composite0-dev \
-  libxcb-res0-dev libxcb-ewmh-dev libxcb-icccm4-dev \
-  libxcomposite-dev libxrender-dev libxext-dev \
-  libxfixes-dev libxxf86vm-dev libxtst-dev \
-  libxres-dev libxdamage-dev libxmu-dev \
-  libinput-dev libudev-dev libcap-dev \
-  libpipewire-0.3-dev libavif-dev libdisplay-info-dev \
-  libdecor-0-dev libsdl2-dev libeis-dev \
-  libluajit-5.1-dev libbenchmark-dev libstb-dev \
-  libglm-dev libpixman-1-dev libseat-dev
-```
-Clone the source code.
-```
-git clone  https://github.com/ValveSoftware/gamescope.git
-cd gamescope
-git submodule update --init
-```
-Configure the build.
-```
-meson setup -Dprefix=/opt/gamescope build/
-```
-Compile.
-```
-ninja -C build/
-```
-Install.
-```
-sudo meson install -C build/ --skip-subprojects
-```
-Add gamescope to the PATH.
-```
-echo 'export PATH=$PATH:/opt/gamescope/bin' | sudo tee -a /etc/profile.d/gamescope.sh
-```
-Logout and log back in.
-
 ## Optional: Sound Fix
 If you have issues with sound stutering try using this command:
 ```
