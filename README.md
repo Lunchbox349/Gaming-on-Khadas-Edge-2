@@ -282,7 +282,7 @@ MESA_GL_VERSION_OVERRIDE=4.6 MESA_GLSL_VERSION_OVERRIDE=460 MESA_LOADER_DRIVER_O
 ```
 
 ## Optional: Gamescope
-Gamescope is useful for fixing issues with resolutions and fullscreen mode on top of its upscaling abilities. Unfortunately it doesn't have a package in Debian Trixie, so we are going to have to compile it. The good news is that this will give us the bleeding-edge version of gamescope. Note: Most of this guide is just taken from VennStone's guide [here](https://interfacinglinux.com/community/linuxgaming/installing-gamescope-on-debian-13-amd-nvidia/).
+Gamescope is useful for fixing issues with resolutions and fullscreen mode on top of its upscaling abilities. Unfortunately it doesn't have a package in Debian 13 or Ubuntu 24.04, so we are going to have to compile it. The good news is that this will give us the bleeding-edge version of gamescope. Note: Most of this guide is just taken from VennStone's guide [here](https://interfacinglinux.com/community/linuxgaming/installing-gamescope-on-debian-13-amd-nvidia/).
 
 Install Dependencies.
 ```
