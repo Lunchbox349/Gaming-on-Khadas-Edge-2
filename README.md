@@ -110,6 +110,10 @@ glxinfo | grep "OpenGL version"
 ```
 vkcube
 ```
+4. Test opengl
+```
+glxgears
+```
 ## Installing Box64
 Box64 tends to offer better performance than FEX on RK3588 chips. Not only that, but FEX is included in the arm64 version of Steam; we can use that version instead of installing FEX globally.
 ```
