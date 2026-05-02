@@ -2,12 +2,25 @@
 I have spent a few weeks figuring all this stuff out, as there is little to no new documentation on this subject. Allow me to change that. This is a guide to running arm64 Steam with the latest mesa and DXVK. In theory most of this guide should work on all SBCs with RK3588 chips, but I haven't got any other than the Khadas Edge 2, so testing has not been done on other SBCs.
 
 ## Installing Linux
-For this guide we're going to be using Armbian Debian 13 Trixie with the current kernel. This nets us both the latest stable kernel and the latest Debian version; this is very important for what we're doing. Downloading is easy enough; you can find it in the OOWOW or [here](https://armbian.com/boards/khadas-edge2) on Armbian's website. You can flash it in the OOWOW.
+For this guide we're going to be using Armbian with the current kernel. We need the current or edge kernel, as they offer better compatibility with the bleeding edge. Downloading is easy enough; you can find it in the OOWOW or here on Armbian's website. You can flash it in the OOWOW.
+
 ## Setting up Armbian
 The first thing you're going to want to do after installing Armbian is, of course, update:
 ```
 sudo apt update && sudo apt -y upgrade
 ```
+## Setting up Armbian Noble Ubuntu 24.04
+I don't know about other RK3588 versions of Armbian, but for some reason the gnome version is missing a sound server. You can install it with this command:
+```
+sudo apt install pipewire-audio libcanberra-pulse
+```
+After installing the audio server you'll need to restart it.
+```
+systemctl --user restart pipewire pipewire-pulse wireplumber
+```
+Sound should be working now.
+
+## Setting up Armbian Trixie Debian 13
 After that you're going to need a desktop as well as a web browser. The `rtkit` package is to fix an error with pipewire.
 ```
 sudo apt install gnome-core firefox-esr rtkit
@@ -34,10 +47,56 @@ sudo netplan apply
 ```
 Now after a few seconds you should have the WiFi stuff pop up and be functional.
 
+## Installing Latest Mesa for Ubuntu 24.04
+To install the latest Mesa drivers, we can use the mesaaco repo, which gives us bleeding-edge Mesa.
+```
+sudo add-apt-repository ppa:ernstp/mesaaco
+sudo apt update && sudo apt -y upgrade
+sudo apt install vulkan-tools mesa-vulkan-drivers
+```
+
 ## Compiling and Installing Mesa
-In order to get the latest version of Mesa, you need to compile and install it yourself. Now we're not going to install it to the `usr` directory as that's bad practice and can potentially break your OS install. Instead you'll want to install to the `opt` directory to prevent it from overwriting system files.
+Another way to install the latest Mesa is to compile and install it yourself. Now we're not going to install it to the `usr` directory as that's bad practice and can potentially break your OS install. Instead you'll want to install to the `opt` directory to prevent it from overwriting system files.
 
 First things first you need to install the dependencies:
+
+### Ubuntu 24.04
+```
+sudo apt install \
+cmake pkg-config ninja-build \
+gedit vulkan-tools libopengl0 \
+python3-packaging python3-mako \
+byacc libclc-18-dev libdrm-dev \
+libudev-dev llvm-dev llvm-spirv-18 \
+libllvmspirvlib-18-dev spirv-tools \
+libclang-cpp-dev libwayland-dev \
+libwayland-egl-backend-dev libxcb1-dev \
+libxcb-randr0-dev libx11-dev libxext-dev \
+libxfixes-dev libxcb-glx0-dev \
+libxcb-shm0-dev libx11-xcb-dev \
+libxcb-dri3-dev libxcb-present-dev \
+libxshmfence-dev libxxf86vm-dev \
+libxrandr-dev libclang-dev
+```
+The version of meson supplied by Ubuntu 24.04 is too old to compile mesa, so you'll have to manually install the latest meson.
+
+Download latest meson.
+```
+MESON_VERSION=$(curl -s "https://api.github.com/repos/mesonbuild/meson/releases/latest" | grep -Po '"tag_name": "\K[0-9.]+')
+wget -qO meson.tar.gz https://github.com/mesonbuild/meson/releases/latest/download/meson-${MESON_VERSION}.tar.gz
+```
+Install meson to `opt`.
+```
+sudo mkdir /opt/meson
+sudo tar xf meson.tar.gz --strip-components=1 -C /opt/meson
+sudo mv /opt/meson/meson.py /opt/meson/meson
+```
+Add meson to PATH
+```
+echo 'export PATH=$PATH:/opt/meson' | sudo tee -a /etc/profile.d/meson.sh
+```
+
+### Debian 13
 ```
 sudo apt install build-essential git clang \
 	cmake pkg-config gedit \
@@ -53,12 +112,14 @@ sudo apt install build-essential git clang \
 	libxcb-present-dev libxshmfence-dev libxxf86vm-dev \
 	libxrandr-dev libclang-dev
 ```
-If you run into issues with `libclc-19-dev` `llvm-spirv-19` `libllvmspirvlib-19-dev` it probably means that Debian has updated which version of `clang` and `llvm` they use. To fix this, you just need to change the 19 in each package to whatever version the current `clang` is.
+### Possible Issue
+If you run into issues with `libclc-xx-dev` `llvm-spirv-xx` `libllvmspirvlib-xx-dev` it probably means that your distro has updated which version of `clang` and `llvm` they use. To fix this, you just need to change the xx in each package to whatever version the current `clang` is.
 
-You can figure out which version of `clang` Debian installed by running this command:
+You can figure out which version of `clang` your distro has installed by running this command:
 ```
 clang --version
 ```
+### Compiling
 The next step is to clone the Mesa repository:
 ```
 git clone https://gitlab.freedesktop.org/mesa/mesa
@@ -219,6 +280,53 @@ If the game fails to start with Zink, you can try to force a higher OpenGL versi
 ```
 MESA_GL_VERSION_OVERRIDE=4.6 MESA_GLSL_VERSION_OVERRIDE=460 MESA_LOADER_DRIVER_OVERRIDE=zink GALLIUM_DRIVER=zink LIBGL_KOPPER_DRI2=true %command%
 ```
+
+## Optional: Gamescope
+Gamescope is useful for fixing issues with resolutions and fullscreen mode on top of its upscaling abilities. Unfortunately it doesn't have a package in Debian Trixie, so we are going to have to compile it. The good news is that this will give us the bleeding-edge version of gamescope. Note: Most of this guide is just taken from VennStone's guide [here](https://interfacinglinux.com/community/linuxgaming/installing-gamescope-on-debian-13-amd-nvidia/).
+
+Install Dependencies.
+```
+sudo apt install \
+  git build-essential cmake
+  meson xwayland wayland-protocols \
+  glslang-tools libwayland-dev libvulkan-dev \
+  libdrm-dev libgbm-dev libxkbcommon-dev \
+  libxkbfile-dev libxfont-dev libxcvt-dev \
+  libx11-dev libx11-xcb-dev libxcb-composite0-dev \
+  libxcb-res0-dev libxcb-ewmh-dev libxcb-icccm4-dev \
+  libxcomposite-dev libxrender-dev libxext-dev \
+  libxfixes-dev libxxf86vm-dev libxtst-dev \
+  libxres-dev libxdamage-dev libxmu-dev \
+  libinput-dev libudev-dev libcap-dev \
+  libpipewire-0.3-dev libavif-dev libdisplay-info-dev \
+  libdecor-0-dev libsdl2-dev libeis-dev \
+  libluajit-5.1-dev libbenchmark-dev libstb-dev \
+  libglm-dev libpixman-1-dev libseat-dev
+```
+Clone the source code.
+```
+git clone  https://github.com/ValveSoftware/gamescope.git
+cd gamescope
+git submodule update --init
+```
+Configure the build.
+```
+meson setup -Dprefix=/opt/gamescope build/
+```
+Compile.
+```
+ninja -C build/
+```
+Install.
+```
+sudo meson install -C build/ --skip-subprojects
+```
+Add gamescope to the PATH.
+```
+echo 'export PATH=$PATH:/opt/gamescope/bin' | sudo tee -a /etc/profile.d/gamescope.sh
+```
+Logout and log back in.
+
 ## Optional: Sound Fix
 If you have issues with sound stutering try using this command:
 ```
