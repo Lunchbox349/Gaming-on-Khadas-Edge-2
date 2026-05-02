@@ -1,8 +1,10 @@
+Note: I'm switching this to Armbian Noble, as there are many more precompiled binaries that are much easier to work with. You can still find the original guide in the Armbian-Trixie branch. 
+
 # Gaming on the Khadas Edge 2 in 2026
 I have spent a few weeks figuring all this stuff out, as there is little to no new documentation on this subject. Allow me to change that. This is a guide to running arm64 Steam with the latest mesa and DXVK. In theory most of this guide should work on all SBCs with RK3588 chips, but I haven't got any other than the Khadas Edge 2, so testing has not been done on other SBCs.
 
 ## Installing Linux
-For this guide we're going to be using Armbian Debian 13 Trixie with the current kernel. This nets us both the latest stable kernel and the latest Debian version; this is very important for what we're doing. Downloading is easy enough; you can find it in the OOWOW or [here](https://armbian.com/boards/khadas-edge2) on Armbian's website. You can flash it in the OOWOW.
+For this guide we're going to be using Armbian Ubuntu Noble 24.04 with the current kernel. We need the current or edge kernel, as they offer better compatibility with the bleeding edge. Downloading is easy enough; you can find it in the OOWOW or [here](https://armbian.com/boards/khadas-edge2) on Armbian's website. You can flash it in the OOWOW.
 
 ## Setting up Armbian
 The first thing you're going to want to do after installing Armbian is, of course, update:
@@ -68,19 +70,13 @@ rm -rf builddir
 ```
 After this you just need to run the command to configure Meson:
 ```
-meson setup \
- -Dprefix=/opt/mesa \
- -Dgles2=enabled \
- -Dgallium-drivers=panfrost,zink \
- -Dvulkan-drivers=panfrost \
- -Dtools=drm-shim \
- -Dbuildtype=release \
- builddir/
+sudo apt install pipewire-audio libcanberra-pulse
 ```
-You need to compile it on 1 thread in order to prevent a race condition that can potentially cause the build to fail.
+After installing the audio server you'll need to restart it.
 ```
-meson compile -j 1 -C builddir/
+systemctl --user restart pipewire pipewire-pulse wireplumber
 ```
+Sound should be working now.
 
 Once it's done compiling, you need to install it:
 ```
@@ -141,9 +137,9 @@ box64 steam
 ```
 Once you reach the login screen close Steam completely.
 
-You'll need these dependancies for arm64 Steam as well as unzip:
+You'll need this dependency for arm64 Steam:
 ```
-sudo apt install libgtk2.0-0t64 libsdl2-mixer-2.0-0 unzip
+sudo apt install libopenal1
 ```
 Download the Steam arm64 manifest:
 ```
@@ -167,7 +163,7 @@ You need to link `libvpx` to prevent an error.
 sudo ln -s /usr/lib/aarch64-linux-gnu/libvpx.so.9 /usr/lib/aarch64-linux-gnu/libvpx.so.6
 ```
 
-You should now be able to run Steam from:
+You should now be able to run Steam from the command below, although you may have to restart Steam a few times to get it to work.
 ```
 ~/.local/share/Steam/steamrtarm64/steam
 ```
@@ -189,8 +185,6 @@ Remove leftover files:
 ```
 rm ~/ARM64proton-Runtime64.tar.gz ~/bins_linuxarm64_linuxarm64.zip ~/install_steam.sh
 ```
-
-The native arm Steam uses the x86 runtime to launch games when not loading its own integrated FEX. This causes whichever emulator has its binfmt enabled to be loaded no matter what.
 
 To run a game with Valve's integrated FEX, you just need to start a game with `Proton 11.0 (ARM64, Local)`.
 
