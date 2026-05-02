@@ -35,7 +35,7 @@ sudo netplan apply
 Now after a few seconds you should have the WiFi stuff pop up and be functional.
 
 ## Compiling and Installing Mesa
-In order to get the latest version of Mesa, you need to compile and install it yourself. Now we're not going to install it to the `usr` directory as that's bad practice and can potentially break your OS install. Instead we're going to install to the `opt` directory to prevent it from overwriting system files.
+In order to get the latest version of Mesa, you need to compile and install it yourself. Now we're not going to install it to the `usr` directory as that's bad practice and can potentially break your OS install. Instead you'll want to install to the `opt` directory to prevent it from overwriting system files.
 
 First things first you need to install the dependencies:
 ```
@@ -275,13 +275,8 @@ echo 'export PULSE_LATENCY_MSEC=60' | sudo tee -a /etc/profile.d/soundfix.sh
 ```
 After that, just log out and log back in, and the sound should be fixed.
 ## Special Thanks
-
 **VennStone**, from the interfacing Linux forum for figuring out how to run the arm64 version of Steam.
 
-
-
 **KhanhDTP**, from the Armbian forum for their work on dxvk-stripped as well as their help getting games running on the RK3588. 
-
-
 
 Obviously the developers of FEX and Box64 as well.
