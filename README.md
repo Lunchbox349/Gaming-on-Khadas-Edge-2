@@ -54,6 +54,7 @@ sudo apt install build-essential git clang \
 	libxrandr-dev libclang-dev
 ```
 If you run into issues with `libclc-19-dev` `llvm-spirv-19` `libllvmspirvlib-19-dev` it probably means that Debian has updated which version of `clang` and `llvm` they use. To fix this, you just need to change the 19 in each package to whatever version the current `clang` is.
+
 You can figure out which version of `clang` Debian installed by running this command:
 ```
 clang --version
@@ -118,6 +119,7 @@ sudo apt update && sudo apt install -y box64-rk3588
 ```
 ## Installing Steam
 Note: Large portions of this part of the guide were taken from VennStone's post [here](https://interfacinglinux.com/community/sbcsoftware/native-steam-client-for-arm-linux/).
+
 To Install the arm native version of Steam you first need to install the x86_64 version of Steam:
 ```
 wget https://raw.githubusercontent.com/ptitSeb/box64/main/install_steam.sh
@@ -174,7 +176,9 @@ Remove leftover files:
 rm ~/ARM64proton-Runtime64.tar.gz ~/bins_linuxarm64_linuxarm64.zip ~/install_steam.sh
 ```
 The native arm Steam uses the x86 runtime to launch games when not loading its own integrated FEX. This causes whichever emulator has its binfmt enabled to be loaded no matter what.
+
 To run a game with Valve's integrated FEX, you just need to start a game with `Proton 11.0 (ARM64, Local)`.
+
 It seems that running the Steam client natively on ARM breaks support for running 32-bit games with box64. To fix this, enable wow64.
 ```
 PROTON_USE_WOW64=1 %command%
