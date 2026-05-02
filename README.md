@@ -145,11 +145,6 @@ Once it's done compiling, you need to install it:
 ```
 meson install -C builddir/
 ```
-Once Mesa is installed you can remove the source code:
-```
-cd
-sudo rm -r ~/mesa
-```
 Now you need to tell Linux where the new Mesa install is:
 ```
 echo 'LD_LIBRARY_PATH="/opt/mesa/lib/aarch64-linux-gnu"' | sudo tee -a /etc/environment.d/10-mesa.conf
@@ -174,6 +169,11 @@ vkcube
 4. Test opengl:
 ```
 glxgears
+```
+Once Mesa is installed and working you can remove the source code:
+```
+cd
+sudo rm -r ~/mesa
 ```
 ## Installing Box64
 Box64 tends to offer better performance than FEX on RK3588 chips. Not only that, but FEX is included in the arm64 version of Steam; we can use that version instead of installing FEX globally.
