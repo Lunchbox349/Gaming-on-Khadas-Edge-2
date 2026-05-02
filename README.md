@@ -1,11 +1,8 @@
-Note: I'm switching this to Armbian Noble, as there are many more precompiled binaries that are much easier to work with. You can still find the original guide in the Armbian-Trixie branch. 
-
 # Gaming on the Khadas Edge 2 in 2026
 I have spent a few weeks figuring all this stuff out, as there is little to no new documentation on this subject. Allow me to change that. This is a guide to running arm64 Steam with the latest mesa and DXVK. In theory most of this guide should work on all SBCs with RK3588 chips, but I haven't got any other than the Khadas Edge 2, so testing has not been done on other SBCs.
 
 ## Installing Linux
-For this guide we're going to be using Armbian Ubuntu Noble 24.04 with the current kernel. We need the current or edge kernel, as they offer better compatibility with the bleeding edge. Downloading is easy enough; you can find it in the OOWOW or [here](https://armbian.com/boards/khadas-edge2) on Armbian's website. You can flash it in the OOWOW.
-
+For this guide we're going to be using Armbian Debian 13 Trixie with the current kernel. This nets us both the latest stable kernel and the latest Debian version; this is very important for what we're doing. Downloading is easy enough; you can find it in the OOWOW or [here](https://armbian.com/boards/khadas-edge2) on Armbian's website. You can flash it in the OOWOW.
 ## Setting up Armbian
 The first thing you're going to want to do after installing Armbian is, of course, update:
 ```
@@ -38,7 +35,7 @@ sudo netplan apply
 Now after a few seconds you should have the WiFi stuff pop up and be functional.
 
 ## Compiling and Installing Mesa
-In order to get the latest version of Mesa, you need to compile and install it yourself. Now we're not going to install it to the `usr` directory as that's bad practice and can potentially break your OS install. Instead you'll want to install to the `opt` directory to prevent it from overwriting system files.
+In order to get the latest version of Mesa, you need to compile and install it yourself. Now we're not going to install it to the `usr` directory as that's bad practice and can potentially break your OS install. Instead we're going to install to the `opt` directory to prevent it from overwriting system files.
 
 First things first you need to install the dependencies:
 ```
@@ -57,7 +54,6 @@ sudo apt install build-essential git clang \
 	libxrandr-dev libclang-dev
 ```
 If you run into issues with `libclc-19-dev` `llvm-spirv-19` `libllvmspirvlib-19-dev` it probably means that Debian has updated which version of `clang` and `llvm` they use. To fix this, you just need to change the 19 in each package to whatever version the current `clang` is.
-
 You can figure out which version of `clang` Debian installed by running this command:
 ```
 clang --version
@@ -70,25 +66,28 @@ rm -rf builddir
 ```
 After this you just need to run the command to configure Meson:
 ```
-sudo apt install pipewire-audio libcanberra-pulse
+meson setup \
+ -Dprefix=/opt/mesa \
+ -Dgles2=enabled \
+ -Dgallium-drivers=panfrost,zink \
+ -Dvulkan-drivers=panfrost \
+ -Dtools=drm-shim \
+ -Dbuildtype=release \
+ builddir/
 ```
-After installing the audio server you'll need to restart it.
+You need to compile it on 1 thread in order to prevent a race condition that can potentially cause the build to fail.
 ```
-systemctl --user restart pipewire pipewire-pulse wireplumber
+meson compile -j 1 -C builddir/
 ```
-Sound should be working now.
-
 Once it's done compiling, you need to install it:
 ```
 meson install -C builddir/
 ```
-
 Once Mesa is installed you can remove the source code:
 ```
 cd
 sudo rm -r ~/mesa
 ```
-
 Now you need to tell Linux where the new Mesa install is:
 ```
 echo 'LD_LIBRARY_PATH="/opt/mesa/lib/aarch64-linux-gnu"' | sudo tee -a /etc/environment.d/10-mesa.conf
@@ -123,9 +122,9 @@ sudo wget https://ryanfortner.github.io/box64-debs/box64.list -O /etc/apt/source
 wget -qO- https://ryanfortner.github.io/box64-debs/KEY.gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/box64-debs-archive-keyring.gpg 
 sudo apt update && sudo apt install -y box64-rk3588
 ```
+
 ## Installing Steam
 Note: Large portions of this part of the guide were taken from VennStone's post [here](https://interfacinglinux.com/community/sbcsoftware/native-steam-client-for-arm-linux/).
-
 To Install the arm native version of Steam you first need to install the x86_64 version of Steam:
 ```
 wget https://raw.githubusercontent.com/ptitSeb/box64/main/install_steam.sh
@@ -137,9 +136,9 @@ box64 steam
 ```
 Once you reach the login screen close Steam completely.
 
-You'll need this dependency for arm64 Steam:
+You'll need these dependancies for arm64 Steam as well as unzip:
 ```
-sudo apt install libopenal1
+sudo apt install libgtk2.0-0t64 libsdl2-mixer-2.0-0 unzip
 ```
 Download the Steam arm64 manifest:
 ```
@@ -153,7 +152,6 @@ you need to extract the `bins_linuxarm64_linuxarm64.zip` to `~/.local/share/stea
 ```
 unzip ./bins_linuxarm64_linuxarm64.zip -d ~/.local/share/Steam/
 ```
-
 Next you need to change the permisions on the `steamrtarm64` folder.
 ```
 chmod -R u+rwx ~/.local/share/Steam/steamrtarm64/
@@ -162,21 +160,19 @@ You need to link `libvpx` to prevent an error.
 ```
 sudo ln -s /usr/lib/aarch64-linux-gnu/libvpx.so.9 /usr/lib/aarch64-linux-gnu/libvpx.so.6
 ```
-
 You should now be able to run Steam from the command below, although you may have to restart Steam a few times to get it to work.
 ```
 ~/.local/share/Steam/steamrtarm64/steam
 ```
+
 In order to launch games from the arm64 version of Steam, you need the arm64 version of the Steam Linux runtime.
 ```
 wget https://archive.org/download/arm-64proton-runtime-64.tar/ARM64proton-Runtime64.tar.gz
 ```
-
 Extract to `~/.local/share/Steam/compatibilitytools.d/`.
 ```
 tar -xvzf ./ARM64proton-Runtime64.tar.gz -C ~/.local/share/Steam/compatibilitytools.d/
 ```
-
 Now you need to create this symlink:
 ```
 ln -s "$HOME/.local/share/Steam/linuxarm64" "$HOME/.steam/sdkarm64"
@@ -186,13 +182,14 @@ Remove leftover files:
 rm ~/ARM64proton-Runtime64.tar.gz ~/bins_linuxarm64_linuxarm64.zip ~/install_steam.sh
 ```
 
+The native arm Steam uses the x86 runtime to launch games when not loading its own integrated FEX. This causes whichever emulator has its binfmt enabled to be loaded no matter what.
+
 To run a game with Valve's integrated FEX, you just need to start a game with `Proton 11.0 (ARM64, Local)`.
 
 It seems that running the Steam client natively on ARM breaks support for running 32-bit games with box64. To fix this, enable wow64.
 ```
 PROTON_USE_WOW64=1 %command%
 ```
-
 ## DXVK and Zink
 Here is where we encounter my biggest headache and the thing that took me the longest to figure out. The thing is the Mali G610, the GPU used by the RK3588, is missing components that make it compatible with normal Vulkan applications, mainly Vulkan extensions, but it's also missing multiple hardware descriptors, the two most important being `fillModeNonSolid`, and `shaderClipDistance`. A lot of Vulkan renderers use these two missing Vulkan hardware descriptors, including DXVK and Zink. However, all hope is not lost; thanks to a community of gamers on the Orange Pi 5, we now have patched versions of DXVK as well as a way to run Zink.
 
@@ -277,10 +274,14 @@ If you have issues with sound stutering try using this command:
 echo 'export PULSE_LATENCY_MSEC=60' | sudo tee -a /etc/profile.d/soundfix.sh
 ```
 After that, just log out and log back in, and the sound should be fixed.
-
 ## Special Thanks
+
 **VennStone**, from the interfacing Linux forum for figuring out how to run the arm64 version of Steam.
 
+
+
 **KhanhDTP**, from the Armbian forum for their work on dxvk-stripped as well as their help getting games running on the RK3588. 
+
+
 
 Obviously the developers of FEX and Box64 as well.
