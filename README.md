@@ -287,7 +287,7 @@ Gamescope is useful for fixing issues with resolutions and fullscreen mode on to
 Install Dependencies.
 ```
 sudo apt install \
-  git build-essential cmake
+  git build-essential cmake \
   meson xwayland wayland-protocols \
   glslang-tools libwayland-dev libvulkan-dev \
   libdrm-dev libgbm-dev libxkbcommon-dev \
