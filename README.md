@@ -109,19 +109,13 @@ glxinfo | grep "OpenGL version"
 ```
 vkcube
 ```
-sudo add-apt-repository ppa:ernstp/mesaaco
-sudo apt update && sudo apt -y upgrade
-sudo apt install vulkan-tools mesa-vulkan-drivers
-```
 ## Installing Box64
 Box64 tends to offer better performance than FEX on RK3588 chips. Not only that, but FEX is included in the arm64 version of Steam; we can use that version instead of installing FEX globally.
 ```
 sudo wget https://ryanfortner.github.io/box64-debs/box64.list -O /etc/apt/sources.list.d/box64.list
 wget -qO- https://ryanfortner.github.io/box64-debs/KEY.gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/box64-debs-archive-keyring.gpg 
 sudo apt update && sudo apt install -y box64-rk3588
-
 ```
-
 ## Installing Steam
 Note: Large portions of this part of the guide were taken from VennStone's post [here](https://interfacinglinux.com/community/sbcsoftware/native-steam-client-for-arm-linux/).
 To Install the arm native version of Steam you first need to install the x86_64 version of Steam:
@@ -163,7 +157,6 @@ You should now be able to run Steam from the command below, although you may hav
 ```
 ~/.local/share/Steam/steamrtarm64/steam
 ```
-
 In order to launch games from the arm64 version of Steam, you need the arm64 version of the Steam Linux runtime.
 ```
 wget https://archive.org/download/arm-64proton-runtime-64.tar/ARM64proton-Runtime64.tar.gz
@@ -180,11 +173,8 @@ Remove leftover files:
 ```
 rm ~/ARM64proton-Runtime64.tar.gz ~/bins_linuxarm64_linuxarm64.zip ~/install_steam.sh
 ```
-
 The native arm Steam uses the x86 runtime to launch games when not loading its own integrated FEX. This causes whichever emulator has its binfmt enabled to be loaded no matter what.
-
 To run a game with Valve's integrated FEX, you just need to start a game with `Proton 11.0 (ARM64, Local)`.
-
 It seems that running the Steam client natively on ARM breaks support for running 32-bit games with box64. To fix this, enable wow64.
 ```
 PROTON_USE_WOW64=1 %command%
