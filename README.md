@@ -1,5 +1,5 @@
 # Gaming on the Khadas Edge 2 in 2026
-I have spent a few weeks figuring all this stuff out, as there is little to no new documentation on this subject. Allow me to change that. This is a guide to running arm64 Steam with the latest mesa and DXVK. Just a fair warning: this guide is not for the faint of heart; we are going to get deep into the technical weeds with this one. In theory most of this guide should work on all SBCs with RK3588 chips, but I haven't got any other than the Khadas Edge 2, so testing has not been done on other SBCs.
+I have spent a few weeks figuring all this stuff out, as there is little to no new documentation on this subject. Allow me to change that. This is a guide to running arm64 Steam with the latest mesa and DXVK. In theory most of this guide should work on all SBCs with RK3588 chips, but I haven't got any other than the Khadas Edge 2, so testing has not been done on other SBCs.
 
 ## Installing Linux
 For this guide we're going to be using Armbian Debian 13 Trixie with the current kernel. This nets us both the latest stable kernel and the latest Debian version; this is very important for what we're doing. Downloading is easy enough; you can find it in the OOWOW or [here](https://armbian.com/boards/khadas-edge2) on Armbian's website. You can flash it in the OOWOW.
@@ -36,7 +36,7 @@ sudo netplan apply
 Now after a few seconds you should have the WiFi stuff pop up and be functional.
 
 ## Compiling and Installing Mesa
-In order to get the latest version of Mesa, you need to compile and install it yourself. Now we're not going to install it to the `usr` directory as that's bad practice and can potentially break your OS install. Instead we're going to install to the `opt` directory to prevent it from overwriting system files.
+In order to get the latest version of Mesa, you need to compile and install it yourself. Now we're not going to install it to the `usr` directory as that's bad practice and can potentially break your OS install. Instead you'll want to install to the `opt` directory to prevent it from overwriting system files.
 
 First things first you need to install the dependencies:
 ```
@@ -60,7 +60,7 @@ You can figure out which version of `clang` Debian installed by running this com
 ```
 clang --version
 ```
-The next step is to clone the Mesa repository and set up the build directory:
+The next step is to clone the Mesa repository:
 ```
 git clone https://gitlab.freedesktop.org/mesa/mesa
 cd mesa
@@ -120,85 +120,16 @@ glxgears
 ```
 If all those are good, you have successfully updated Mesa without overwriting your Debian system libraries.
 
-## Installing FEX
-Install Dependencies (Note: This does not include dependencies already installed when compiling mesa.)
+## Installing Box64
+Box64 tends to offer better performance than FEX on RK3588 chips. Not only that, but FEX is included in the arm64 version of Steam; we can use that version instead of installing FEX globally.
 ```
-sudo apt install  binfmt-support lld libssl-dev \
-	g++-x86-64-linux-gnu libgcc-14-dev-amd64-cross \
-	libgcc-14-dev-i386-cross libstdc++-14-dev-i386-cross \
-	squashfs-tools squashfuse qt6-declarative-dev \
-	qml6-module-qtquick-controls qml6-module-qtquick-dialogs \
-	qml6-module-qtquick-layouts qml6-module-qtqml-workerscript \
-	qml6-module-qtquick-templates qml6-module-qtquick-window \
-	libxcb-dri2-0-dev libasound2-dev libegl1-mesa-dev
-```
-Setup Build Directory:
-```
-git clone --recurse-submodules https://github.com/FEX-Emu/FEX.git
-cd FEX
-mkdir Build
-cd Build
-```
-Configure with `cmake`:
-```
-CC=clang CXX=clang++ cmake \
-	-DCMAKE_INSTALL_PREFIX=/opt/fex-emu \
-	-DCMAKE_BUILD_TYPE=Release \
-	-DUSE_LINKER=lld \
-	-DENABLE_LTO=True \
-	-DBUILD_TESTING=False \
-	-DENABLE_ASSERTIONS=False \
-	-DBUILD_THUNKS=True \
-	-G Ninja ..
-```
-Build with `ninja`:
-```
-ninja -j4
-```
-Install:
-```
-sudo ninja install
-```
-Once installed you can remove the source code:
-```
-cd
-sudo rm -r ~/FEX
-```
-
-Add the FEX binaries to the linux path:
-```
-echo 'export PATH=$PATH:/opt/fex-emu/bin' | sudo tee -a /etc/profile.d/fex-emu.sh
-```
-After that you need to log out and log back in.
-
-Now you need to install a rootfs:
-```
-FEXRootFSFetcher
-```
-I tested this with the Arch Linux rootfs, so I know that one should work. Make sure to choose to extract it.
-
-Now you need to link the `~/.local/share/fex-emu` to `~/.fex-emu`
-```
-ln -s ~/.local/share/fex-emu ~/.fex-emu
-```
-Configure FEX with:
-```
-FEXConfig
-```
-Make sure to enable the Arch Linux rootfs as well as enable Vulkan and GL under libraries. Remember to hit file and then save before closing.
-
-### Optional: Enabling binfmt for FEX (Note: Don't do this if you plan to have Box64 installed.)
-
-Link the binfmt configs to the binfmt.d folder:
-```
-sudo ln -s /opt/fex-emu/lib/binfmt.d/FEX-x86_64.conf /etc/binfmt.d/
-sudo ln -s /opt/fex-emu/lib/binfmt.d/FEX-x86.conf /etc/binfmt.d/
-```
-Restart `systemd-binfmt`:
-```
-sudo systemctl restart systemd-binfmt
+sudo wget https://ryanfortner.github.io/box64-debs/box64.list -O /etc/apt/sources.list.d/box64.list
+wget -qO- https://ryanfortner.github.io/box64-debs/KEY.gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/box64-debs-archive-keyring.gpg 
+sudo apt update && sudo apt install -y box64-rk3588
 ```
 ## Installing Steam
+Note: Large portions of this part of the guide were taken from VennStone's post [here](https://interfacinglinux.com/community/sbcsoftware/native-steam-client-for-arm-linux/).
+
 To Install the arm native version of Steam you first need to install the x86_64 version of Steam:
 ```
 wget https://raw.githubusercontent.com/ptitSeb/box64/main/install_steam.sh
@@ -206,7 +137,7 @@ bash install_steam.sh
 ```
 You can run Steam with:
 ```
-FEXBash steam
+box64 steam
 ```
 Once you reach the login screen close Steam completely.
 
@@ -269,9 +200,9 @@ PROTON_USE_WOW64=1 %command%
 ```
 
 ## DXVK and Zink
-Here is where we encounter my biggest headache and the thing that took me the longest to figure out. The thing is the Mali G610, the GPU used by the RK3588, is missing a few things that make it compatible with normal Vulkan applications, mainly Vulkan extensions, but it's also missing two Vulkan hardware descriptors `fillModeNonSolid`, and `shaderClipDistance` this makes running DXVK and Zink tricky as well as running Vulkan native games much harder. Specifically, `fillModeNonSolid` is the most important of the 2 missing hardware descriptors, as this was included in Vulkan 1.0 and basically every Vulkan game uses it. However, all hope is not lost; thanks to a community of gamers on the Orange Pi 5, we now have patched versions of DXVK as well as figured out how to run Zink.
+Here is where we encounter my biggest headache and the thing that took me the longest to figure out. The thing is the Mali G610, the GPU used by the RK3588, is missing components that make it compatible with normal Vulkan applications, mainly Vulkan extensions, but it's also missing multiple hardware descriptors, the two most important being `fillModeNonSolid`, and `shaderClipDistance`. A lot of Vulkan renderers use these two missing Vulkan hardware descriptors, including DXVK and Zink. However, all hope is not lost; thanks to a community of gamers on the Orange Pi 5, we now have patched versions of DXVK as well as a way to run Zink.
 
-To run DXVK, you're going to need one of the builds you can find below. I personally recommend trying the DXVK-Sarek-Zayada build, as it's the one I've had the best results with, but any of them should work.
+To run DXVK, you're going to need one of the builds you can find below. I personally recommend trying the DXVK-Sarek-Zayada build, as it's the one I've had the best results with, but any of them should work. Note: Some games may have better compatibility with some DXVK versions; for example, Left for Dead 2 works best with DXVK-stripped v1.5.5.
 
 <table>
 	<tr>
@@ -298,39 +229,53 @@ MESA_LOADER_DRIVER_OVERRIDE=zink GALLIUM_DRIVER=zink LIBGL_KOPPER_DRI2=true %com
 ```
 If the game fails to start with Zink, you can try to force a higher OpenGL version.
 ```
-PAN_MESA_DEBUG=gl3 MESA_GL_VERSION_OVERRIDE=4.6 MESA_GLSL_VERSION_OVERRIDE=460 MESA_LOADER_DRIVER_OVERRIDE=zink GALLIUM_DRIVER=zink LIBGL_KOPPER_DRI2=true %command%
+MESA_GL_VERSION_OVERRIDE=4.6 MESA_GLSL_VERSION_OVERRIDE=460 MESA_LOADER_DRIVER_OVERRIDE=zink GALLIUM_DRIVER=zink LIBGL_KOPPER_DRI2=true %command%
 ```
-## Optional: Compiling and Installing Box64
-Box64 tends to get better performance on RK3588 chips. Unfortunately, however, box64 is hardcoded to install into the `usr` directory; this can cause issues with, for example, FEX's binfmt support.
+## Optional: Gamescope
+Gamescope is useful for fixing issues with resolutions and fullscreen mode on top of its upscaling abilities. Unfortunately it doesn't have a package in Debian Trixie, so we are going to have to compile it. The good news is that this will give us the bleeding-edge version of gamescope. Note: Most of this guide is just taken from VennStone's guide [here](https://interfacinglinux.com/community/linuxgaming/installing-gamescope-on-debian-13-amd-nvidia/).
 
-First you need to set up the build environment:
+Install Dependencies.
 ```
-git clone https://github.com/ptitSeb/box64
-cd box64
-mkdir build
-cd build
+sudo apt install \
+  git build-essential cmake
+  meson xwayland wayland-protocols \
+  glslang-tools libwayland-dev libvulkan-dev \
+  libdrm-dev libgbm-dev libxkbcommon-dev \
+  libxkbfile-dev libxfont-dev libxcvt-dev \
+  libx11-dev libx11-xcb-dev libxcb-composite0-dev \
+  libxcb-res0-dev libxcb-ewmh-dev libxcb-icccm4-dev \
+  libxcomposite-dev libxrender-dev libxext-dev \
+  libxfixes-dev libxxf86vm-dev libxtst-dev \
+  libxres-dev libxdamage-dev libxmu-dev \
+  libinput-dev libudev-dev libcap-dev \
+  libpipewire-0.3-dev libavif-dev libdisplay-info-dev \
+  libdecor-0-dev libsdl2-dev libeis-dev \
+  libluajit-5.1-dev libbenchmark-dev libstb-dev \
+  libglm-dev libpixman-1-dev libseat-dev
 ```
-Configure the build using `cmake`:
+Clone the source code.
 ```
-cmake .. -D ARM_DYNAREC=ON -D RK3588=1 -D CMAKE_BUILD_TYPE=RelWithDebInfo -D BOX32=ON -D BOX32_BINFMT=ON
+git clone  https://github.com/ValveSoftware/gamescope.git
+cd gamescope
+git submodule update --init
 ```
-Compile the build:
+Configure the build.
 ```
-make -j4
+meson setup -Dprefix=/opt/gamescope build/
 ```
-Install Box64:
+Compile.
 ```
-sudo make install
+ninja -C build/
 ```
-Restart systemd-binfmt:
+Install.
 ```
-sudo systemctl restart systemd-binfmt
+sudo meson install -C build/ --skip-subprojects
 ```
-Once installed you can remove the source code:
+Add gamescope to the PATH.
 ```
-cd
-sudo rm -r ~/box64
+echo 'export PATH=$PATH:/opt/gamescope/bin' | sudo tee -a /etc/profile.d/gamescope.sh
 ```
+Logout and log back in.
 
 ## Optional: Sound Fix
 If you have issues with sound stutering try using this command:
@@ -338,6 +283,7 @@ If you have issues with sound stutering try using this command:
 echo 'export PULSE_LATENCY_MSEC=60' | sudo tee -a /etc/profile.d/soundfix.sh
 ```
 After that, just log out and log back in, and the sound should be fixed.
+
 ## Special Thanks
 **VennStone**, from the interfacing Linux forum for figuring out how to run the arm64 version of Steam.
 
