@@ -109,18 +109,17 @@ glxinfo | grep "OpenGL version"
 ```
 vkcube
 ```
-4. Check if Opengl is working correctly:
+sudo add-apt-repository ppa:ernstp/mesaaco
+sudo apt update && sudo apt -y upgrade
+sudo apt install vulkan-tools mesa-vulkan-drivers
 ```
-glxgears
-```
-If all those are good, you have successfully updated Mesa without overwriting your Debian system libraries.
-
 ## Installing Box64
 Box64 tends to offer better performance than FEX on RK3588 chips. Not only that, but FEX is included in the arm64 version of Steam; we can use that version instead of installing FEX globally.
 ```
 sudo wget https://ryanfortner.github.io/box64-debs/box64.list -O /etc/apt/sources.list.d/box64.list
 wget -qO- https://ryanfortner.github.io/box64-debs/KEY.gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/box64-debs-archive-keyring.gpg 
 sudo apt update && sudo apt install -y box64-rk3588
+
 ```
 
 ## Installing Steam
@@ -222,52 +221,6 @@ If the game fails to start with Zink, you can try to force a higher OpenGL versi
 ```
 MESA_GL_VERSION_OVERRIDE=4.6 MESA_GLSL_VERSION_OVERRIDE=460 MESA_LOADER_DRIVER_OVERRIDE=zink GALLIUM_DRIVER=zink LIBGL_KOPPER_DRI2=true %command%
 ```
-## Optional: Gamescope
-Gamescope is useful for fixing issues with resolutions and fullscreen mode on top of its upscaling abilities. Unfortunately it doesn't have a package in Debian Trixie, so we are going to have to compile it. The good news is that this will give us the bleeding-edge version of gamescope. Note: Most of this guide is just taken from VennStone's guide [here](https://interfacinglinux.com/community/linuxgaming/installing-gamescope-on-debian-13-amd-nvidia/).
-
-Install Dependencies.
-```
-sudo apt install \
-  git build-essential cmake
-  meson xwayland wayland-protocols \
-  glslang-tools libwayland-dev libvulkan-dev \
-  libdrm-dev libgbm-dev libxkbcommon-dev \
-  libxkbfile-dev libxfont-dev libxcvt-dev \
-  libx11-dev libx11-xcb-dev libxcb-composite0-dev \
-  libxcb-res0-dev libxcb-ewmh-dev libxcb-icccm4-dev \
-  libxcomposite-dev libxrender-dev libxext-dev \
-  libxfixes-dev libxxf86vm-dev libxtst-dev \
-  libxres-dev libxdamage-dev libxmu-dev \
-  libinput-dev libudev-dev libcap-dev \
-  libpipewire-0.3-dev libavif-dev libdisplay-info-dev \
-  libdecor-0-dev libsdl2-dev libeis-dev \
-  libluajit-5.1-dev libbenchmark-dev libstb-dev \
-  libglm-dev libpixman-1-dev libseat-dev
-```
-Clone the source code.
-```
-git clone  https://github.com/ValveSoftware/gamescope.git
-cd gamescope
-git submodule update --init
-```
-Configure the build.
-```
-meson setup -Dprefix=/opt/gamescope build/
-```
-Compile.
-```
-ninja -C build/
-```
-Install.
-```
-sudo meson install -C build/ --skip-subprojects
-```
-Add gamescope to the PATH.
-```
-echo 'export PATH=$PATH:/opt/gamescope/bin' | sudo tee -a /etc/profile.d/gamescope.sh
-```
-Logout and log back in.
-
 ## Optional: Sound Fix
 If you have issues with sound stutering try using this command:
 ```
