@@ -21,7 +21,7 @@ systemctl --user restart pipewire pipewire-pulse wireplumber
 Sound should be working now.
 
 ## Setting up Armbian Trixie Debian 13
-After that you're going to need a desktop as well as a web browser. The `rtkit` package is to fix an error with pipewire.
+For Debian 13, you're going to need a desktop as well as a web browser. The `rtkit` package is to fix an error with pipewire.
 ```
 sudo apt install gnome-core firefox-esr rtkit
 ```
